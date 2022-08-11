@@ -1,24 +1,27 @@
 from dash import Dash, html, dcc
 import dash_bootstrap_components as dbc
 import plotly.express as px
-
+from plotter import timer, voltage, hfr
+from app_data import timer, tb_voltage, tb_temp, tb_hfr, tb_j
 
 # Data
 df = px.data.iris()
 
-# ZBT Icon
+# Iamge - Icon
 def drawIcon():
     return html.Div([
         dbc.Card(
             dbc.CardBody([
                 html.Div([
-                    html.Img(src='assets/zbt.PNG')
+                    html.Img(src='assets/ZBT_Logo_RGB_B_S_cropped.png',
+                             style={'height':'45px', 'width':'auto', 'max-width': '100%'}
+                    )
                 ], style={'textAlign': 'center'})
             ])
         ),
     ])
 
-# Text field Title
+# Text - Title
 def drawTextTitle():
     return html.Div([
         dbc.Card(
@@ -30,44 +33,19 @@ def drawTextTitle():
         ),
     ])
 
-
-
-
-# Testrig Figure
+# Figure - Testbench
 def drawFigureTestrig():
     return  html.Div([
         dbc.Card(
             dbc.CardBody([
                 dcc.Graph(
-                    figure=px.line(
-                        df, color="species"
-                    ).update_layout(
+                    figure=px.line(x=timer, y=[tb_voltage, tb_hfr]
+                                   ).update_layout(
                         template='plotly_dark',
-                        plot_bgcolor= 'rgba(0, 0, 0, 0)',
-                        paper_bgcolor= 'rgba(0, 0, 0, 0)',
+                        plot_bgcolor='rgba(0, 0, 0, 0)',
+                        paper_bgcolor='rgba(0, 0, 0, 0)',
                     ),
                     config={
-                    }
-                )
-            ])
-        ),
-    ])
-
-# Figure
-def drawFigure():
-    return  html.Div([
-        dbc.Card(
-            dbc.CardBody([
-                dcc.Graph(
-                    figure=px.bar(
-                        df, x="sepal_width", y="sepal_length", color="species"
-                    ).update_layout(
-                        template='plotly_dark',
-                        plot_bgcolor= 'rgba(0, 0, 0, 0)',
-                        paper_bgcolor= 'rgba(0, 0, 0, 0)',
-                    ),
-                    config={
-                        'displayModeBar': False
                     }
                 )
             ])
@@ -203,4 +181,4 @@ app.layout = html.Div([
 ])
 
 # Run app and display result inline in the notebook
-app.run_server()
+app.run_server(debug=True)

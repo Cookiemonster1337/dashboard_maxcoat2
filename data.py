@@ -1,14 +1,15 @@
 import pandas as pd
-from plotly.offline import plot
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import os
+import plotly.express as px
 
 # ----------------------------------------------------------------------------------------------------------------------
 # DATA IMPORT
 # ----------------------------------------------------------------------------------------------------------------------
-testrig_folder = r'W:\Projekte\MAXCoat_61906\04_Bearbeitung\in-situ PEMFC\MS2\S316LwCoating\testrig'
-gamry_folder = r'W:\Projekte\MAXCoat_61906\04_Bearbeitung\in-situ PEMFC\MS2\S316LwCoating\gamry'
+
+testrig_folder = r'data\testrig'
+gamry_folder = r'data\gamry'
 
 # FILES TESTRIG
 
@@ -298,41 +299,54 @@ fig_cv4.update_layout(width=1200, height=600)
 # ----------------------------------------------------------------------------------------------------------------------
 # DASH
 # ----------------------------------------------------------------------------------------------------------------------
-import dash
-from dash import dcc
-from dash import html
+# import dash
+# from dash import dcc
+# from dash import html
+#
+# app = dash.Dash()
+#
+# app.layout = html.Div([
+#     html.H1('IGF MAXCoat (in-situ PEMFC-AST Testing)', style={'textAlign': 'center'}),
+#
+#     html.Div(['Data of Testrig Parameters',
+#     dcc.Graph(id='main-data', figure=fig_main),]),
+#
+#     html.Div(['AST Load Cycling',
+#     dcc.Graph(id='ast-data', figure=fig_ast),]),
+#
+#     html.Div(['AST Load Cycling',
+#     dcc.Graph(id='deg-data', figure=fig_deg),]),
+#
+#     html.Div(['IV-Curve in between AST',
+#     dcc.Graph(id='pol-data', figure=fig_pol),]),
+#
+#     html.Div(['EIS in between AST',
+#     dcc.Graph(id='eis-data', figure=fig_eis),]),
+#
+#     html.Div(['CV-I in between AST (-0.05 to -0.9V @ 100mV/s)',
+#               dcc.Graph(id='cv1-data', figure=fig_cv1), ]),
+#
+#     html.Div(['CV-II in between AST (0 to -0.9V @ 100mV/s)',
+#               dcc.Graph(id='cv2-data', figure=fig_cv2), ]),
+#
+#     html.Div(['CV-III in between AST  (0 to -0.9V @ 20mV/s)',
+#               dcc.Graph(id='cv3-data', figure=fig_cv3), ]),
+#
+#     html.Div(['CV-IV in between AST  (-0.05 to -0.9V @ 20mV/s)',
+#               dcc.Graph(id='cv4-data', figure=fig_cv4), ]),
+# ])
+#
+# app.run_server(debug=True)
 
-app = dash.Dash()
+def graph_testrig(df, timer):
+    voltage = df['AI.U.E.Co.Tb.1 [V]']
+    temperature = df['AI.T.Air.ST.UUT.out [°C]']
+    hfr = df['HFR [mOhm]'].apply(lambda x: x if x != -99 and x < 100 else None)
+    current_density = df['current density [A/cm2]']
 
-app.layout = html.Div([
-    html.H1('IGF MAXCoat (in-situ PEMFC-AST Testing)', style={'textAlign': 'center'}),
 
-    html.Div(['Data of Testrig Parameters',
-    dcc.Graph(id='main-data', figure=fig_main),]),
+    data = [timer, voltage, temperature, hfr, current_density]
 
-    html.Div(['AST Load Cycling',
-    dcc.Graph(id='ast-data', figure=fig_ast),]),
+    fig_main = px.line(data, color="species")
 
-    html.Div(['AST Load Cycling',
-    dcc.Graph(id='deg-data', figure=fig_deg),]),
-
-    html.Div(['IV-Curve in between AST',
-    dcc.Graph(id='pol-data', figure=fig_pol),]),
-
-    html.Div(['EIS in between AST',
-    dcc.Graph(id='eis-data', figure=fig_eis),]),
-
-    html.Div(['CV-I in between AST (-0.05 to -0.9V @ 100mV/s)',
-              dcc.Graph(id='cv1-data', figure=fig_cv1), ]),
-
-    html.Div(['CV-II in between AST (0 to -0.9V @ 100mV/s)',
-              dcc.Graph(id='cv2-data', figure=fig_cv2), ]),
-
-    html.Div(['CV-III in between AST  (0 to -0.9V @ 20mV/s)',
-              dcc.Graph(id='cv3-data', figure=fig_cv3), ]),
-
-    html.Div(['CV-IV in between AST  (-0.05 to -0.9V @ 20mV/s)',
-              dcc.Graph(id='cv4-data', figure=fig_cv4), ]),
-])
-
-app.run_server(debug=True, port=8050, host='0.0.0.0')
+    return fig_main
