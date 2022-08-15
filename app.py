@@ -1,8 +1,7 @@
 from dash import Dash, html, dcc
 import dash_bootstrap_components as dbc
 import plotly.express as px
-from plotter import timer, voltage, hfr
-from app_data import timer, tb_voltage, tb_temp, tb_hfr, tb_j
+from app_data import timer, tb_voltage, tb_temp, tb_hfr, tb_j, dfs_eis
 
 # Data
 df = px.data.iris()
@@ -39,7 +38,7 @@ def drawFigureTestrig():
         dbc.Card(
             dbc.CardBody([
                 dcc.Graph(
-                    figure=px.line(x=timer, y=[tb_voltage, tb_hfr]
+                    figure=px.line(x=timer, y=[tb_voltage, tb_hfr, tb_temp, tb_j], labels={'x': 'time [h]', 'y': 'mean current density [A/cm2]'}
                                    ).update_layout(
                         template='plotly_dark',
                         plot_bgcolor='rgba(0, 0, 0, 0)',
