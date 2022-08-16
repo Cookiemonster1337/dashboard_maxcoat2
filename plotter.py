@@ -19,19 +19,33 @@ tb_dfs = [pd.read_csv(testrig_folder + '/' + f, encoding='cp1252', delimiter='\t
 # ----------------------------------------------------------------------------------------------------------------------
 
 # convert csv do dfs and concat to one dataframe
-tb_df = pd.concat(tb_dfs, ignore_index=True)
+df_tb = pd.concat(tb_dfs, ignore_index=True)
 
 # manipulate dataframe
-tb_df['timer'] = pd.to_datetime(tb_df['Datum / Uhrzeit'], format='%d.%m.%y %H:%M:%S')
-tb_df = tb_df.set_index('timer')
-starttime = tb_df.index[0]
-timer = tb_df.index
-tb_df = tb_df.reset_index()
-tb_df['current density [A/cm2]'] = round(tb_df['I Summe [A]'] / 25, 2)
+df_tb['timer'] = pd.to_datetime(df_tb['Datum / Uhrzeit'], format='%d.%m.%y %H:%M:%S')
+df_tb = df_tb.set_index('timer')
+starttime = df_tb.index[0]
+timer = df_tb.index
+df_tb = df_tb.reset_index()
+df_tb['current density [A/cm2]'] = round(df_tb['I Summe [A]'] / 25, 2)
+df_tb['mean current density [A/cm2]'] = 0
+df_tb['ASR [mOhm*cm2]'] = 0
 
-tb_df = tb_df[['timer', 'AI.U.E.Co.Tb.1 [V]', 'AI.T.Air.ST.UUT.out [°C]', 'current density [A/cm2]', 'HFR [mOhm]']]
+comment_marker = ''
+start_marker = 0
+for i in range(0, len(df_tb)):
+    if df_tb['HFR [mOhm]'][i] > 0:
+        df_tb['ASR [mOhm*cm2]'][i] = df_tb['HFR [mOhm]'][i] * 25
+    else:
+        df_tb['ASR [mOhm*cm2]'][i] = None
+    if df_tb['Kommentar'][i] != comment_marker:
+        comment_marker = df_tb['Kommentar'][i]
+        df_tb['mean current density [A/cm2]'][start_marker:i-1] = \
+            df_tb['current density [A/cm2]'][start_marker:i-1].mean()
+        start_marker = i
 
-# tb_df.rename(columns={'AI.U.E.Co.Tb.1 [V]':'cell potential [V]', 'AI.T.Air.ST.UUT.out [°C]':'cell temperature [°C]'})
+df_tb_comp = df_tb
+df_tb = df_tb[['timer', 'AI.U.E.Co.Tb.1 [V]', 'AI.T.Air.ST.UUT.out [°C]', 'current density [A/cm2]', 'HFR [mOhm]']]
 
 # ----------------------------------------------------------------------------------------------------------------------
 # DATAFRAMES - EIS --> eis_dfs
@@ -78,17 +92,83 @@ cv1_dfs = [pd.read_csv(gamry_folder + '/' + f, encoding='cp1252',
 # ----------------------------------------------------------------------------------------------------------------------
 
 # SAVE DATAFRAME - TESTBENCH
-tb_df.to_csv(r'data\dashdata\df_testrig.csv')
+df_tb.to_csv(r'data\dashdata\df_testrig.csv')
 
-# SAVE DATAFRAME - EIS
+# SAVE DATAFRAMES - IV
+iv_markers = df_tb_comp.index[df_tb_comp['Kommentar'] == '#IV-CURVE#'].tolist()
+
+for i in range(0, len(iv_markers)):
+
+    if i == len(iv_markers) - 1:
+        df_iv = df_tb_comp.iloc[iv_markers[i]:]
+    else:
+        df_iv = df_tb_comp.iloc[iv_markers[i]: iv_markers[i + 1]]
+
+    name = 'POL#' + str(i) + '_' + df_iv['Datum / Uhrzeit'][iv_markers[i]][:8]
+
+    df_iv = df_iv[df_iv['Kommentar'] == 'ui1_messen']
+    df_iv = df_iv[df_iv['current density [A/cm2]'] != 1.19]
+
+    df_iv = df_iv[['timer', 'AI.U.E.Co.Tb.1 [V]', 'AI.T.Air.ST.UUT.out [°C]', 'current density [A/cm2]', 'HFR [mOhm]',
+                   'mean current density [A/cm2]']]
+
+    df_iv.to_csv(r'data\dashdata' + '/' + name)
+
+# SAVE DATAFRAMES - AST
+ast_markers = df_tb_comp.index[df_tb_comp['Kommentar'] == '#AST-CYCLE#'].tolist()
+
+deg_j_600mV = []
+deg_j_400mV = []
+deg_asr_600mV = []
+deg_asr_400mV = []
+deg_asr_0mV = []
+deg_timer = []
+
+
+for i in range(0, len(ast_markers)):
+
+    df_ast = df_tb_comp.iloc[ast_markers[i]:iv_markers[i+1]]
+
+    exclusions = ['anfahren_10A', 'anfahren_20A', 'ocv', 'anfahren_I_High', 'anfahren_I_Low', 'halten_I_Low',
+                 'halten_I_High']
+
+    df_ast = df_ast[~df_ast['Kommentar'].isin(exclusions)]
+
+    df_ast = df_ast.reset_index()
+
+    ast_start = df_ast['T relativ [min]'][0]
+
+    df_ast['t elapsed [s]'] = (df_ast['T relativ [min]'] - ast_start) / 60
+
+    name = 'AST#' + str(i+1) + '_' + df_tb_comp['Datum / Uhrzeit'][ast_markers[i]][:8]
+
+    deg_j_600mV.append(df_ast[df_ast['Kommentar'] == 'operation@0.6V']['mean current density [A/cm2]'].mean())
+    deg_j_400mV.append(df_ast[df_ast['Kommentar'] == 'operation@0.4V']['mean current density [A/cm2]'].mean())
+    deg_asr_600mV.append(df_ast[df_ast['Kommentar'] == 'operation@0.6V']['ASR [mOhm*cm2]'].mean())
+    deg_asr_400mV.append(df_ast[df_ast['Kommentar'] == 'operation@0.4V']['ASR [mOhm*cm2]'].mean())
+    deg_asr_0mV.append(df_ast[df_ast['Kommentar'] == 'OCV']['ASR [mOhm*cm2]'].mean())
+    deg_timer.append(i * 25)
+
+    df_ast = df_ast[['timer', 't elapsed [s]', 'AI.U.E.Co.Tb.1 [V]', 'AI.T.Air.ST.UUT.out [°C]', 'current density [A/cm2]', 'HFR [mOhm]',
+                     'mean current density [A/cm2]']]
+
+    df_ast.to_csv(r'data\dashdata' + '/' + name)
+
+df_deg = pd.DataFrame(data={'deg_j_@400mV': deg_j_400mV, 'deg_j_@600mV': deg_j_600mV,
+                            'deg_asr_@400mV': deg_asr_400mV, 'deg_asr_@600mV': deg_asr_600mV,
+                            'deg_asr_@0mV': deg_asr_0mV, 'timer': deg_timer})
+
+df_deg.to_csv(r'data\dashdata' + '/' + 'DEG')
+
+# SAVE DATAFRAMES - EIS
 for i in range(0, len(eis_dfs)):
     name = 'EIS#' + str(i) + '_' + eis_files[i]
-    eis_dfs[i].to_csv(r'data\dashdata\'' + name)
+    eis_dfs[i].to_csv(r'data\dashdata' + '/' + name)
 
-# SAVE DATAFRAME - CV
+# SAVE DATAFRAMES - CV
 for i in range(0, len(cv1_dfs)):
     name = 'CV#' + str(i) + '_' + cv1_files[i]
-    cv1_dfs[i].to_csv(r'data\dashdata\'' + name)
+    cv1_dfs[i].to_csv(r'data\dashdata' + '/' + name)
 
 # for i in range(0, len(cv2_dfs)):
 #     name = 'CV#' + str(i) + '_' + cv2_files[i]
