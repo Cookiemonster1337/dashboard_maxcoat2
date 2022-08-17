@@ -1,7 +1,7 @@
-from dash import Dash, html, dcc
+from dash import Dash, html, dcc, dash_table
 import dash_bootstrap_components as dbc
 import plotly.express as px
-from app_data import tb_data, iv_data, ast_data, eis_data, cv1_data, deg_data
+from app_data import tb_data, iv_data, ast_data, eis_data, cv1_data, deg_data, df_param_ast, df_param_pol
 import plotly.graph_objects as go
 
 
@@ -20,10 +20,13 @@ def drawIcon():
                     html.Img(src='assets/ZBT_Logo_RGB_B_S_cropped.png',
                              style={'height':'45px', 'width':'auto', 'max-width': '100%'}
                     )
-                ], style={'textAlign': 'center'})
-            ])
+                ],
+                )
+            ], style={'height': '80px'}
+            )
         ),
-    ])
+    ],
+    )
 
 # Text - Title
 def drawTextTitle():
@@ -32,66 +35,99 @@ def drawTextTitle():
             dbc.CardBody([
                 html.Div([
                     html.H2("IGF MAXCoat - PEMFC-AST Testing"),
-                ], style={'textAlign': 'center', 'color':colors['zbt']})
-            ])
+                ], style={'textAlign': 'center', 'color': 'white'}
+                )
+            ], style={'height': '80px'}
+            )
         ),
     ])
 
-# Figure - Testbench
+
 def drawFigureTestrig():
     return html.Div([
-        dbc.Row([
-            dbc.Col([
-                dbc.Card(
-                    dbc.CardBody([
-                        dcc.Graph(
-                            figure=go.Figure(data=tb_data).update_layout(
-                                template='plotly_dark',
-                                plot_bgcolor='rgba(0, 0, 0, 0)',
-                                paper_bgcolor='rgba(0, 0, 0, 0)',
-                                title='Testbench-Parameter Monitoring',
-                                xaxis=dict(title='duration [h]'),
-                                yaxis=dict(title='current density [A/cm2]'),
-                                yaxis2=dict(title='parameter selection', overlaying='y', side='right'),
-                                legend={"x": 1.1, 'y':1.4}
-                            ),
-                            config={
-                            }
-                        )
-                    ])
-                ),
-                ], width=10
-            ),
-            dbc.Col([
-                dbc.Row([
-                    dbc.Card(
-                        dbc.CardBody([
-                            html.Div([
-                                html.H2("Time of Operation: 8days"),
-                            ], style={'textAlign': 'center'}
-                            )
-                        ])
-                    )
-                    ], align='center'
-                ),
-                dbc.Row([
-                    dbc.Card(
-                        dbc.CardBody([
-                            dbc.CardBody([
-                                html.Div([
-                                    html.H2("Time of AST: 6days"),
-                                ], style={'textAlign': 'center'}
-                                )
-                            ])
-                        ])
-                    )
-                    ], align='center'
+        dbc.Card(
+            dbc.CardBody([
+                dcc.Graph(
+                    figure=go.Figure(data=tb_data).update_layout(
+                        template='plotly_dark',
+                        plot_bgcolor='rgba(0, 0, 0, 0)',
+                        paper_bgcolor='rgba(0, 0, 0, 0)',
+                        title='Testbench-Parameter Monitoring',
+                        xaxis=dict(title='duration [h]'),
+                        yaxis=dict(title='current density [A/cm2]'),
+                        yaxis2=dict(title='parameter selection', overlaying='y', side='right'),
+                        legend={"x": 1.1, 'y':1.4}
+                    ),
+                    config={
+                    }
                 )
-                ], width=2
-            )
-            ], align='center'
-        )
+            ], style={})
+        ),
     ])
+
+
+# Table - Testing Parameters
+def drawTableParameterAST():
+    return html.Div([
+        html.Div([
+            html.H6("Testing Parameters - AST"),
+        ], style={'textAlign': 'center', 'color': 'white'}
+        ),
+        html.Br(),
+
+        html.Div([
+            dash_table.DataTable(data=df_param_ast.to_dict('records'),
+                                 style_data={'width': 'auto', 'height': 'auto',
+                                             'backgroundColor': 'rgba(0, 0, 0, 0)', 'color': 'white'
+                                             },
+                                 style_cell={'font_size': '12px'
+                                             },
+                                 style_header={'backgroundColor': colors['zbt'], 'color': 'white'
+                                               },
+                                 style_cell_conditional=[
+                                     {'if': {'column_id': 'Parameters'}, 'textAlign': 'left'
+                                      },
+                                     {'if': {'column_id': 'SetPoints'}, 'textAlign': 'right'
+                                      }
+                                     ],
+                                 columns=[{"name": i, "id": i} for i in df_param_ast.columns
+                                          ],
+                                 ),
+            ],
+        )
+        ]
+    )
+
+# Table - AST Parameters
+def drawTableParameterPOL():
+    return html.Div([
+        html.Div([
+            html.H6("Testing Parameters - AST"),
+        ], style={'textAlign': 'center', 'color': 'white'}
+        ),
+        html.Br(),
+        html.Div([
+        dash_table.DataTable(data=df_param_pol.to_dict('records'),
+                             style_data={'width': 'auto', 'height': 'auto',
+                                         'backgroundColor': 'rgba(0, 0, 0, 0)', 'color': 'white'
+                                         },
+                             style_cell={'font_size': '12px'
+                                         },
+                             style_header={'backgroundColor': colors['zbt'], 'color': 'white'
+                                           },
+                             style_cell_conditional=[
+                                 {'if': {'column_id': 'Parameters'}, 'textAlign': 'left'
+                                  },
+                                 {'if': {'column_id': 'SetPoints'}, 'textAlign': 'right'
+                                  }
+                                 ],
+                             columns=[{"name": i, "id": i} for i in df_param_ast.columns
+                                      ],
+                             ),
+            ],
+        )
+    ]
+    )
 
 # Figure AST
 def drawFigureAST():
@@ -136,7 +172,8 @@ def drawFigureDEG():
                     config={
                     }
                 )
-            ])
+            ], style={'textAlign': 'center'}
+            )
         ),
     ])
 
@@ -212,7 +249,7 @@ def drawFigureCV():
 
 
 # Build App
-app = Dash(external_stylesheets=[dbc.themes.SLATE])
+app = Dash(external_stylesheets=[dbc.themes.DARKLY])
 
 app.layout = html.Div([
     dbc.Card(
@@ -220,46 +257,74 @@ app.layout = html.Div([
             dbc.Row([                   # 1
                 dbc.Col([
                     drawIcon()
-                ], width=2),
+                ], width=2, style={'background': 'red', 'padding': '1px'}
+                ),
                 dbc.Col([
                     drawTextTitle()
-                ], width=10),
-            ], align='center'),
-            html.Br(),
+                ], width=10, style={'background': 'yellow','padding': '1px', 'mr': '1px'}
+                ),
+            ], align='center', justify=False
+                , style={'background': 'white', 'height': '80px', 'mb':'10px', 'mt':'2px', 'padding' : '0px'}
+            ),
             dbc.Row([                   # 2
                 dbc.Col([
                     drawFigureTestrig()
-                ], width=12),
-            ], align='center'),
-            html.Br(),
-            dbc.Row([                   # 3
+                ], width=9, style={}
+                ),
                 dbc.Col([
-                    drawFigureAST()
-                ], width=6),
-                dbc.Col([
-                    drawFigureIV()
-                ], width=6),
-            ], align='center'),
-            html.Br(),
-            dbc.Row([                   # 4
-                dbc.Col([
-                    drawFigureEIS()
-                ], width=6),
-                dbc.Col([
-                    drawFigureCV()
-                ], width=6),
-            ], align='center'),
-            html.Br(),
-            dbc.Row([                   # 5
-                dbc.Col([
-                    drawFigureDEG()
-                ], width=6),
-                dbc.Col([
-                ], width=6),
-            ], align='center'),
-        ]), color = 'dark'
+                    dbc.Row([
+                            dbc.Card(
+                                dbc.CardBody([
+                                    drawTableParameterAST()
+                                ])
+                            )
+                    ], align='center'
+                    ),
+                    html.Br(),
+                    dbc.Row([
+                        dbc.Card(
+                            dbc.CardBody([
+                                dbc.CardBody([
+                                    drawTableParameterPOL()
+                                ])
+                            ])
+                        )
+                    ], align='center'
+                    )
+                ], width=3, style={}
+                ),
+                ], align='center', style={'background': 'white', 'height': '80px', 'mb':'10px', 'mt':'2px', 'padding' : '0px'}
+            ),
+            # html.Br(),
+            # dbc.Row([                   # 3
+            #     dbc.Col([
+            #         drawFigureAST()
+            #     ], width=6),
+            #     dbc.Col([
+            #         drawFigureDEG()
+            #     ], width=6),
+            # ], align='center'),
+            # html.Br(),
+            # dbc.Row([                   # 4
+            #     dbc.Col([
+            #         drawFigureEIS()
+            #     ], width=6),
+            #     dbc.Col([
+            #         drawFigureCV()
+            #     ], width=6),
+            # ], align='center'),
+            # html.Br(),
+            # dbc.Row([                   # 5
+            #     dbc.Col([
+            #         drawFigureIV()
+            #     ], width=6),
+            #     dbc.Col([
+            #     ], width=6),
+            # ], align='center', style={'height': '400px'}),
+        ], style={'background': colors['zbt'], 'mt': '0px', 'mb': '0px', 'padding': '1px'}),
     )
-])
+], style={'background': 'pink'}
+)
 
 # Run app and display result inline in the notebook
 app.run_server(debug=True)
