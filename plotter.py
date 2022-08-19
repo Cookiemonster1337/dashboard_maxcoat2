@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+pd.options.mode.chained_assignment = None  # default='warn'
 
 
 testrig_folder = r'data\testrig'
@@ -30,6 +31,8 @@ df_tb = df_tb.reset_index()
 df_tb['current density [A/cm2]'] = round(df_tb['I Summe [A]'] / 25, 2)
 df_tb['mean current density [A/cm2]'] = 0
 df_tb['ASR [mOhm*cm2]'] = 0
+df_tb['duration [s]'] = 0
+
 
 comment_marker = ''
 start_marker = 0
@@ -44,8 +47,26 @@ for i in range(0, len(df_tb)):
             df_tb['current density [A/cm2]'][start_marker:i-1].mean()
         start_marker = i
 
+
 df_tb_comp = df_tb
-df_tb = df_tb[['timer', 'AI.U.E.Co.Tb.1 [V]', 'AI.T.Air.ST.UUT.out [°C]', 'current density [A/cm2]', 'HFR [mOhm]']]
+
+df_tb = df_tb[(df_tb['timer'] <= '2022-07-30 13:45:00') | (df_tb['timer'] >= '2022-08-02 10:15:00')]
+df_tb = df_tb.reset_index()
+df_tb['time'] = pd.to_datetime(df_tb['timer'], format='%Y-%m-%d %H:%M:%S')
+
+gap = 10094
+start = df_tb['time'][0]
+start2 = df_tb['time'][gap]
+
+for i in range(1, len(df_tb)):
+    if i < gap:
+        df_tb['duration [s]'][i] = (df_tb['time'][i] - start).total_seconds()
+        duration = df_tb['duration [s]'][i]
+    else:
+        df_tb['duration [s]'][i] = ((df_tb['time'][i] - start2).total_seconds()) + duration
+
+df_tb = df_tb[['timer', 'duration [s]', 'AI.U.E.Co.Tb.1 [V]', 'AI.T.Air.ST.UUT.out [°C]', 'current density [A/cm2]',
+               'HFR [mOhm]']]
 
 # ----------------------------------------------------------------------------------------------------------------------
 # DATAFRAMES - EIS --> eis_dfs
@@ -97,6 +118,7 @@ df_tb.to_csv(r'data\dashdata\df_testrig.csv')
 # SAVE DATAFRAMES - IV
 iv_markers = df_tb_comp.index[df_tb_comp['Kommentar'] == '#IV-CURVE#'].tolist()
 
+
 for i in range(0, len(iv_markers)):
 
     if i == len(iv_markers) - 1:
@@ -114,6 +136,8 @@ for i in range(0, len(iv_markers)):
 
     df_iv.to_csv(r'data\dashdata' + '/' + name)
 
+
+
 # SAVE DATAFRAMES - AST
 ast_markers = df_tb_comp.index[df_tb_comp['Kommentar'] == '#AST-CYCLE#'].tolist()
 
@@ -124,7 +148,6 @@ deg_asr_400mV = []
 deg_asr_0mV = []
 deg_timer = []
 
-
 for i in range(0, len(ast_markers)):
 
     df_ast = df_tb_comp.iloc[ast_markers[i]:iv_markers[i+1]]
@@ -134,7 +157,7 @@ for i in range(0, len(ast_markers)):
 
     df_ast = df_ast[~df_ast['Kommentar'].isin(exclusions)]
 
-    df_ast = df_ast.reset_index()
+    df_ast = df_ast.reset_index(drop=True)
 
     ast_start = df_ast['T relativ [min]'][0]
 
@@ -154,21 +177,30 @@ for i in range(0, len(ast_markers)):
 
     df_ast.to_csv(r'data\dashdata' + '/' + name)
 
+
 df_deg = pd.DataFrame(data={'deg_j_@400mV': deg_j_400mV, 'deg_j_@600mV': deg_j_600mV,
                             'deg_asr_@400mV': deg_asr_400mV, 'deg_asr_@600mV': deg_asr_600mV,
                             'deg_asr_@0mV': deg_asr_0mV, 'timer': deg_timer})
 
+
+
+
 df_deg.to_csv(r'data\dashdata' + '/' + 'DEG')
+
+
 
 # SAVE DATAFRAMES - EIS
 for i in range(0, len(eis_dfs)):
     name = 'EIS#' + str(i) + '_' + eis_files[i]
     eis_dfs[i].to_csv(r'data\dashdata' + '/' + name)
 
+
+
 # SAVE DATAFRAMES - CV
 for i in range(0, len(cv1_dfs)):
     name = 'CV#' + str(i) + '_' + cv1_files[i]
     cv1_dfs[i].to_csv(r'data\dashdata' + '/' + name)
+
 
 # for i in range(0, len(cv2_dfs)):
 #     name = 'CV#' + str(i) + '_' + cv2_files[i]
@@ -181,7 +213,4 @@ for i in range(0, len(cv1_dfs)):
 # for i in range(0, len(cv4_dfs)):
 #     name = 'CV#' + str(i) + '_' + cv4_files[i]
 #     cv4_dfs[i].to_csv(r'data\dashdata\'' + name)
-
-
-
 

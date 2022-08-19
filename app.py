@@ -1,7 +1,8 @@
 from dash import Dash, html, dcc, dash_table
 import dash_bootstrap_components as dbc
 import plotly.express as px
-from app_data import tb_data, iv_data, ast_data, eis_data, cv1_data, deg_data, df_param_ast, df_param_pol
+from app_data import tb_data, iv_data, ast_data, eis_data, cv1_data, deg_data, df_param_ast, df_param_pol, summary, \
+    sum_data_tr
 import plotly.graph_objects as go
 
 
@@ -200,7 +201,7 @@ def drawFigureDEG():
 
 # Figure IV
 def drawFigureIV():
-    return  html.Div([
+    return dbc.Container([
         dbc.Card(
             dbc.CardBody([
                 dcc.Graph(
@@ -219,12 +220,13 @@ def drawFigureIV():
                 )
             ])
         ),
-    ])
+    ], fluid=True, style={'padding': '0px'}
+    )
 
 
 # Figure EIS
 def drawFigureEIS():
-    return html.Div([
+    return dbc.Container([
         dbc.Card(
             dbc.CardBody([
                 dcc.Graph(
@@ -244,12 +246,12 @@ def drawFigureEIS():
             ],
             )
         ),
-    ],
+    ], fluid=True, style={'padding': '0px'}
     )
 
 # Figure CV
 def drawFigureCV():
-    return html.Div([
+    return dbc.Container([
         dbc.Card(
             dbc.CardBody([
                 dcc.Graph(
@@ -269,7 +271,7 @@ def drawFigureCV():
             ],
             )
         ),
-    ],
+    ], fluid=True, style={'padding': '0px'}
     )
 
 def drawPlaceholder():
@@ -283,7 +285,41 @@ def drawPlaceholder():
                 }
                 )
             ], style={
-                'height': '450px'
+            }
+            )
+        )
+    ], fluid=True, style={'padding': '0px'}
+    )
+
+def drawTestrigSummary():
+    return dbc.Container([
+        dbc.Card(
+            dbc.CardBody([
+                html.Div([
+                    html.H2('Time of Operation'),
+                ], style={
+                    'textAlign': 'center', 'color': 'white'
+                }
+                ),
+                html.Div([
+                    html.H1(str(summary['time of operation [h]']) + ' h'),
+                    dcc.Graph(figure=go.Figure(data=sum_data_tr
+                              ).update_layout(
+                        template='plotly_dark',
+                        plot_bgcolor='rgba(0, 0, 0, 0)',
+                        paper_bgcolor='rgba(0, 0, 0, 0)',
+                        # title='CV in between AST-Cycling',
+                        # xaxis=dict(title='potential vs. H2-Anode [V]'),
+                        # yaxis=dict(title='current [A]'),
+                        legend={"x": 1.1, 'y': 1.4}
+                    ),
+                    config={
+                    }
+                    )
+                ], style={
+                }
+                )
+            ], style={
             }
             )
         )
@@ -307,15 +343,7 @@ app.layout = dbc.Container([
                 ),
             ], align='center',
             ),
-            dbc.Row([                   # 2
-                dbc.Col([
-                    drawFigureTestrig()
-                ], width=9, style={'background':  colors['zbt'],  'padding': '2px'}
-                ),
-                # dbc.Col([
-                #     drawPlaceholder()
-                # ], width=2, style={'background': 'pink', 'padding': '2px'}
-                # ),
+            dbc.Row([
                 dbc.Col([
                     dbc.Row([
                         drawTableParameterAST()
@@ -323,24 +351,40 @@ app.layout = dbc.Container([
                     ),
                     dbc.Row([
                         drawTableParameterPOL()
-                    ], style={'background':  colors['zbt'], 'padding': '2px'}
+                    ], style={'background': colors['zbt'], 'padding': '2px'}
                     )
                 ], width=3, style={}
+                ),
+                dbc.Col([
+                    drawFigureTestrig()
+                ], width=7, style={'background':  colors['zbt'],  'padding': '2px'}
+                ),
+                dbc.Col([
+                    drawTestrigSummary()
+                ], width=2, style={'background': colors['zbt'], 'padding': '2px'}
                 ),
             ], align='center',
             ),
             dbc.Row([                   # 3
                 dbc.Col([
                     drawFigureAST()
-                ], width=6,
+                ], width=4,
                     style={'background': colors['zbt'], 'padding': '2px'
                     }
                 ),
                 dbc.Col([
+                    drawPlaceholder()
+                ], width=2, style={'background': colors['zbt'], 'padding': '2px'}
+                ),
+                dbc.Col([
                     drawFigureDEG()
-                ], width=6,
+                ], width=4,
                     style={'background': colors['zbt'], 'padding': '2px'
                            }
+                ),
+                dbc.Col([
+                    drawPlaceholder()
+                ], width=2, style={'background': colors['zbt'], 'padding': '2px'}
                 ),
             ], align='center'),
             dbc.Row([                   # 4

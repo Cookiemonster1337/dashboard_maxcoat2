@@ -13,10 +13,10 @@ tb_voltage = df_tb['AI.U.E.Co.Tb.1 [V]']
 tb_temp = df_tb['AI.T.Air.ST.UUT.out [°C]']
 tb_hfr = df_tb['HFR [mOhm]'].apply(lambda x: x if x != -99 and x < 100 else None)
 tb_j = df_tb['current density [A/cm2]']
-timer = df_tb['timer']
+duration = df_tb['duration [s]'] / 3600
 
 trace_1 = go.Scatter(
-        x=timer,
+        x=duration,
         y=tb_voltage,
         name='voltage [V]',
         yaxis='y2',
@@ -24,7 +24,7 @@ trace_1 = go.Scatter(
         )
 
 trace_2 = go.Scatter(
-        x=timer,
+        x=duration,
         y=tb_temp,
         name='temperature [°C]',
         yaxis='y2',
@@ -32,7 +32,7 @@ trace_2 = go.Scatter(
         )
 
 trace_3 = go.Scatter(
-        x=timer,
+        x=duration,
         y=tb_hfr*25,
         name='ASR [mOhm*cm2]',
         yaxis='y2',
@@ -40,7 +40,7 @@ trace_3 = go.Scatter(
         )
 
 trace_4 = go.Scatter(
-        x=timer,
+        x=duration,
         y=tb_j,
         name='current density [A/cm2]',
         yaxis='y1'
@@ -62,6 +62,7 @@ dfs_ast = [pd.read_csv(datafolder + '/' + f) for f in os.listdir(datafolder) if 
 ast_names = [str(f) for f in os.listdir(datafolder) if 'AST' in f]
 
 ast_data = []
+ast_durations = []
 
 for i in range(0, len(dfs_ast)):
         df_ast = dfs_ast[i]
@@ -73,6 +74,10 @@ for i in range(0, len(dfs_ast)):
 
         ast_data.append(go.Scatter(x=duration, y=current_density, name=ast_name))
 
+        ast_durations.append(abs(int((pd.to_datetime(df_ast['timer'][df_ast.index[0]], format='%Y-%m-%d %H:%M:%S') -
+                                      pd.to_datetime(df_ast['timer'][df_ast.index[-1]],
+                                                     format='%Y-%m-%d %H:%M:%S')).total_seconds()
+                                     / 3600)))
 # ----------------------------------------------------------------------------------------------------------------------
 # GRAPHDATA - DEG
 # ----------------------------------------------------------------------------------------------------------------------
@@ -128,6 +133,7 @@ dfs_iv = [pd.read_csv(datafolder + '/' + f) for f in os.listdir(datafolder) if '
 iv_names = [str(f) for f in os.listdir(datafolder) if 'POL' in f]
 
 iv_data = []
+iv_durations = []
 
 for i in range(0, len(dfs_iv)):
         df_iv = dfs_iv[i]
@@ -143,6 +149,10 @@ for i in range(0, len(dfs_iv)):
 
         iv_data.append(go.Scatter(x=current_densities, y=mean_voltages, name=iv_name))
 
+        iv_durations.append(abs(int((pd.to_datetime(df_iv['timer'][df_iv.index[0]], format='%Y-%m-%d %H:%M:%S') -
+                                     pd.to_datetime(df_iv['timer'][df_iv.index[-1]],
+                                                    format='%Y-%m-%d %H:%M:%S')).total_seconds()
+                                    / 3600) + 1))
 # ----------------------------------------------------------------------------------------------------------------------
 # GRAPHDATA - EIS
 # ----------------------------------------------------------------------------------------------------------------------
@@ -182,4 +192,18 @@ for i in range(0, len(dfs_cv1)):
         else:
                 cv1_data.append(go.Scatter(x=voltage, y=current, name=cv1_name))
 
+# ----------------------------------------------------------------------------------------------------------------------
+# SUMMARY
+# ----------------------------------------------------------------------------------------------------------------------
+summary = {}
+time_op = df_tb['duration [s]'].max() / 3600
 
+
+summary['time of operation [h]'] = int(time_op)
+summary['duration of ASTs [h]'] = sum(ast_durations)
+summary['duration of CHARs [h]'] = sum(iv_durations)
+summary['duration of Conditioning [h]'] = 36
+
+sum_data_tr = go.Pie(labels=['COND', 'AST', 'CHAR'],
+                         values=[summary['duration of Conditioning [h]'], summary['duration of ASTs [h]'],
+                                 summary['duration of CHARs [h]']], hole=.5)
